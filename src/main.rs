@@ -278,7 +278,7 @@ fn main(){
         if !args.is_empty() {
             //println!("Instruct: {:?} Args: {:?}", first_enum_tok, args);
             println!(
-                "\t{:02X}: {:#010X};", word_count - 1,
+                "\t{:02X}: {:08X};", word_count - 1,
                 args.remove("opcode").unwrap_or(Some(0)).unwrap() |
                 args.remove("addr")  .unwrap_or(Some(0)).unwrap() | // J - Format only
                 args.remove("rs")    .unwrap_or(Some(0)).unwrap() |
@@ -332,7 +332,7 @@ fn main(){
         }
         print!("\t{:02X} : ", word_count - 1);
         if second_enum_tok == Token::Space {
-            println!("0x00000000;");
+            println!("00000000;");
             continue;
         }
         let third_str_tok : String = String::from(no_com_line_it.next().unwrap());
@@ -343,10 +343,10 @@ fn main(){
         if third_str_tok.len() > 2 && &third_str_tok[0..2] == "0x" {
             let data : u32 = u32::from_str_radix(&third_str_tok[2..], 16).unwrap();
             // Reverse byte order
-            println!("{:#010X};",
+            println!("{:08X};",
                 (data >> 24) & 0xFF | (data >> 8) & (0xFF << 8) | (data << 8) & (0xFF << 16) | (data << 16) & (0xFF << 24));
         }
-        else { println!("{:#010X};", third_str_tok.parse::<u32>().unwrap()); }
+        else { println!("{:08X};", third_str_tok.parse::<u32>().unwrap()); }
     }
     if word_count < 0xFF { println!("\t[{:02X}..FF] : 00000000;", word_count); }
     else if word_count > DEPTH {
