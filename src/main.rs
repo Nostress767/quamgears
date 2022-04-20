@@ -108,7 +108,7 @@ fn main(){
                     if jump_labels.contains_key(label) { panic!("ERROR({}): The label {} was defined twice or more times!", i+1, label); }
                     // Using byte memory alignment here instead of word alignment for maybe future use
                     data_labels.insert(String::from(label), mem_byte_alignment);
-                    mem_byte_alignment += data_sz;
+                    for _ in no_com_line_it { mem_byte_alignment += data_sz; }
                 }
             }
             _ => (),
@@ -168,10 +168,8 @@ fn main(){
                         else { args.insert(String::from("rt"), Some((enum_tok as u32) << 16)); }
                     }
                     else if enum_tok == Token::I {
-                        if str_tok.len() > 2 && &str_tok[0..2] == "0x" {
-                            let uint : u32 = u32::from_str_radix(&str_tok[2..], 16).unwrap();
-                            // Reverse byte order
-                            args.insert(String::from("i"), Some((uint >> 24) & 0xFF | (uint >> 8) & (0xFF << 8)));
+                        if str_tok.starts_with("0x") && u32::from_str_radix(&str_tok[2..], 16).is_ok() {
+                            args.insert(String::from("i"), Some(u32::from_str_radix(&str_tok[2..], 16).unwrap()));
                         }
                         else {
                             args.insert(String::from("i"), Some(str_tok.parse::<u32>().unwrap()));
@@ -183,6 +181,17 @@ fn main(){
                         }
                         else if jump_labels.contains_key(&str_tok) {
                             args.insert(String::from("i"), Some((jump_labels[&str_tok] as i32 - word_count as i32) as u32 & 0xFFFF));
+                        }
+                        else if str_tok.contains("(") && str_tok.contains(")"){
+                            let offset : u32 =
+                                if str_tok.starts_with("0x") && u32::from_str_radix(&str_tok[2..str_tok.find('(').unwrap()], 16).is_ok() {
+                                    u32::from_str_radix(&str_tok[2..str_tok.find('(').unwrap()], 16).unwrap()
+                                } else { str_tok[..str_tok.find('(').unwrap()].parse::<u32>().unwrap() };
+                            let label : &str = &str_tok[str_tok.find('(').unwrap() + 1..str_tok.find(')').unwrap()];
+                            if !data_labels.contains_key(&String::from(label)) {
+                                panic!("ERROR({}): Label {} does not exist!", i+1, label);
+                            }
+                            args.insert(String::from("i"), Some((data_labels[&String::from(label)] >> 2) + offset));
                         }
                         else { panic!("ERROR({}): Label {} does not exist!", i+1, str_tok); }
                     }
@@ -224,10 +233,8 @@ fn main(){
                         else { args.insert(String::from("rd"), Some((enum_tok as u32) << 11)); }
                     }
                     else if enum_tok == Token::I {
-                        if str_tok.len() > 2 && &str_tok[0..2] == "0x" {
-                            let uint : u32 = u32::from_str_radix(&str_tok[2..], 16).unwrap();
-                            // Reverse byte order
-                            args.insert(String::from("shamt"), Some(((uint >> 24) & 0xFF) << 6));
+                        if str_tok.starts_with("0x") && u32::from_str_radix(&str_tok[2..], 16).is_ok() {
+                            args.insert(String::from("shamt"), Some(u32::from_str_radix(&str_tok[2..], 16).unwrap()));
                         }
                         else {
                             args.insert(String::from("shamt"), Some(str_tok.parse::<u32>().unwrap() << 6));
@@ -323,30 +330,29 @@ fn main(){
             panic!("ERROR({}): Make sure data labels are inline with the data itself!", i+1);
         }
         else if section != Section::Data { continue; }
-        else { word_count += 1; }
         let second_str_tok : String = String::from(no_com_line_it.next().unwrap());
         let second_enum_tok : Token = parse_token(&second_str_tok);
         match second_enum_tok {
             Token::Word | Token::Space => (),
             _ => panic!("ERROR({}): Unsupported directive {}! Only .word and .space are implemented.", i+1, second_str_tok),
         }
-        print!("\t{:02X} : ", word_count - 1);
         if second_enum_tok == Token::Space {
-            println!("00000000;");
+            println!("\t{:02X} : 00000000;", word_count - 1);
             continue;
         }
-        let third_str_tok : String = String::from(no_com_line_it.next().unwrap());
-        let third_enum_tok : Token = parse_token(&third_str_tok);
-        if third_enum_tok != Token::I {
-            panic!("ERROR({}): Unsupported token {}! Only immediate values can come after .word or .space", i+1, third_str_tok);
+        for word in no_com_line_it {
+            print!("\t{:02X} : ", word_count);
+            word_count += 1;
+            let val_str_tok : String = String::from(word.replace(&[','][..], ""));
+            let val_enum_tok : Token = parse_token(&val_str_tok);
+            if val_enum_tok != Token::I {
+                panic!("ERROR({}): Unsupported token {}! Only immediate values can come after .word or .space", i+1, val_str_tok);
+            }
+            if val_str_tok.starts_with("0x") && u32::from_str_radix(&val_str_tok[2..], 16).is_ok() {
+                println!("{:08X};", u32::from_str_radix(&val_str_tok[2..], 16).unwrap());
+            }
+            else { println!("{:08X};", val_str_tok.parse::<u32>().unwrap()); }
         }
-        if third_str_tok.len() > 2 && &third_str_tok[0..2] == "0x" {
-            let data : u32 = u32::from_str_radix(&third_str_tok[2..], 16).unwrap();
-            // Reverse byte order
-            println!("{:08X};",
-                (data >> 24) & 0xFF | (data >> 8) & (0xFF << 8) | (data << 8) & (0xFF << 16) | (data << 16) & (0xFF << 24));
-        }
-        else { println!("{:08X};", third_str_tok.parse::<u32>().unwrap()); }
     }
     if word_count < 0xFF { println!("\t[{:02X}..FF] : 00000000;", word_count); }
     else if word_count > DEPTH {
@@ -364,7 +370,7 @@ fn main(){
 
 fn parse_first_token(s : &String) -> Token {
     // Check if it is an directive
-    if &s[..1] == "."{
+    if s.starts_with(".") {
         match &s[1..] {
             "globl" => Token::Global,
             "text" => Token::Text,
@@ -407,11 +413,11 @@ fn parse_token(z : &String) -> Token {
     };
     if tok == Token::NotFound {
         // Check if it is an immediate value in hexadecimal
-        if &z[0..2] == "0x" {
+        if z.starts_with("0x") && u32::from_str_radix(&z[2..], 16).is_ok() {
             tok = Token::I;
         }
         // Check if it is an directive
-        else if &z[..1] == "."{
+        else if z.starts_with(".") {
             tok = match &z[1..] {
                 "globl" => Token::Global,
                 "text" => Token::Text,

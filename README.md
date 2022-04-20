@@ -4,7 +4,7 @@ In fact it only supports 15 instructions, that need to be written in a very spec
 
 (The commas(',') and spaces(' ') are **necessary** and **strict** in their placement)  
 #### These I-Format Instructions:  
-* SW, LW used like ``` instr reg, data_label ```  
+* SW, LW used like ``` instr reg, data_label ``` OR ```instr reg, offset(data_label)```  
 * ADDI used like ``` addi reg1, reg2, immediate_value ```  
 * BEQ, BNE used like ``` instr reg1, reg2, jump_label ```  
 #### These R-Format Instructions:  
