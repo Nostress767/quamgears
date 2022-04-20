@@ -337,7 +337,8 @@ fn main(){
             _ => panic!("ERROR({}): Unsupported directive {}! Only .word and .space are implemented.", i+1, second_str_tok),
         }
         if second_enum_tok == Token::Space {
-            println!("\t{:02X} : 00000000;", word_count - 1);
+            println!("\t{:02X} : 00000000;", word_count);
+            word_count += 1;
             continue;
         }
         for word in no_com_line_it {
