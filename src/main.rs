@@ -189,9 +189,17 @@ fn main(){
                                 } else { str_tok[..str_tok.find('(').unwrap()].parse::<u32>().unwrap() };
                             let label : &str = &str_tok[str_tok.find('(').unwrap() + 1..str_tok.find(')').unwrap()];
                             if !data_labels.contains_key(&String::from(label)) {
-                                panic!("ERROR({}): Label {} does not exist!", i+1, label);
+                                let reg_token : Token = parse_token(&String::from(label));
+                                if (reg_token as u32) < 32 {
+                                    args.insert(String::from("rs"), Some((reg_token as u32) << 21));
+                                }
+                                else {
+                                    panic!("ERROR({}): Label {} does not exist!", i+1, label);
+                                }
                             }
-                            args.insert(String::from("i"), Some((data_labels[&String::from(label)] >> 2) + offset));
+                            else {
+                                args.insert(String::from("i"), Some((data_labels[&String::from(label)] >> 2) + offset));
+                            }
                         }
                         else { panic!("ERROR({}): Label {} does not exist!", i+1, str_tok); }
                     }
