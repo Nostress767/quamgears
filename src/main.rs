@@ -74,8 +74,8 @@ fn main(){
     // Get all Jump and Data labels
     for (i, line) in fvec.iter().enumerate() {
         let no_com_line : &str = &line[..line.find('#').unwrap_or(line.len())]; // Strip comments
-        if no_com_line.is_empty() { continue; } // Skip empty lines
-        let mut no_com_line_it = no_com_line.split_whitespace();
+        if no_com_line.trim().is_empty() { continue; } // Skip empty lines
+        let mut no_com_line_it = no_com_line.trim().split_whitespace();
         let str_tok : String = String::from(no_com_line_it.next().unwrap());
         let enum_tok = parse_first_token(&str_tok);
         match enum_tok {
@@ -130,9 +130,9 @@ fn main(){
     // Generate each instruction
     for (i, line) in fvec.iter().enumerate() {
         let no_com_line : &str = &line[..line.find('#').unwrap_or(line.len())]; // Strip comments
-        if no_com_line.is_empty() { continue; } // Skip empty lines
+        if no_com_line.trim().is_empty() { continue; } // Skip empty lines
         let mut args : HashMap<String, Option<u32>> = HashMap::new(); // This will hold the instruction's arguments
-        let mut no_com_line_it = no_com_line.split_whitespace(); // no comments line iterator
+        let mut no_com_line_it = no_com_line.trim().split_whitespace(); // no comments line iterator
         let first_str_tok : String = String::from(no_com_line_it.next().unwrap());
         let first_enum_tok : Token = parse_first_token(&first_str_tok);
         if first_enum_tok == Token::Text {
@@ -317,8 +317,8 @@ fn main(){
 
     for (i, line) in fvec.iter().enumerate() {
         let no_com_line : &str = &line[..line.find('#').unwrap_or(line.len())]; // Strip comments
-        if no_com_line.is_empty() { continue; } // Skip empty lines
-        let mut no_com_line_it = no_com_line.split_whitespace(); // no comments line iterator
+        if no_com_line.trim().is_empty() { continue; } // Skip empty lines
+        let mut no_com_line_it = no_com_line.trim().split_whitespace(); // no comments line iterator
         let first_str_tok : String = String::from(no_com_line_it.next().unwrap());
         let first_enum_tok : Token = parse_first_token(&first_str_tok);
         if first_enum_tok == Token::Data {
