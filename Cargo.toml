@@ -9,4 +9,7 @@ edition = "2021"
 
 [profile.release]
 panic = 'abort'
-strip = 'debuginfo'
+strip = true
+opt-level = "z"
+lto = true
+codegen-units = 1
